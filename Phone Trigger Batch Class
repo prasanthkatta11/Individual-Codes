@@ -1,0 +1,147 @@
+Phone Trigger Batch Class
+
+public class UpdateCheckboxBatch implements Database.Batchable<SObject> {
+    private String sObjectType;
+    private String checkboxField;
+
+    public UpdateCheckboxBatch(String sObjectType, String checkboxField) {
+        this.sObjectType = sObjectType;
+        this.checkboxField = checkboxField;
+    }
+
+    public Database.QueryLocator start(Database.BatchableContext bc) {
+        String query = '';
+        
+        
+        if (sObjectType == 'Account') {
+            query = 'SELECT Id, ' + checkboxField + ' FROM Account WHERE ' + checkboxField + ' = false';
+        } else if (sObjectType == 'Contact') {
+            query = 'SELECT Id, ' + checkboxField + ' FROM Contact WHERE ' + checkboxField + ' = false';
+        } else if (sObjectType == 'Lead') {
+            query = 'SELECT Id, ' + checkboxField + ' FROM Lead WHERE ' + checkboxField + ' = false';
+        }
+        
+        
+        return Database.getQueryLocator(query);
+    }
+
+    public void execute(Database.BatchableContext bc, List<SObject> scope) {
+        for (SObject record : scope) {
+            
+            if (record instanceof Account) {
+                ((Account) record).put(checkboxField, true);
+            } else if (record instanceof Contact) {
+                ((Contact) record).put(checkboxField, true);
+            } else if (record instanceof Lead) {
+                ((Lead) record).put(checkboxField, true);
+            }
+        }
+        
+        update scope;
+    }
+
+    public void finish(Database.BatchableContext bc) {
+        System.debug('Batch execution completed');
+    }
+}
+
+\
+\
+\
+\
+\
+\
+
+Phone Trigger Test CLass
+
+@isTest
+private class UpdateCheckboxBatchTest {
+    
+    @isTest
+    static void testAccountBatchExecution() {
+        
+        List<Account> accounts = new List<Account>();
+        for (Integer i = 0; i < 15; i++) {
+            accounts.add(new Account(Name = 'Test Account ' + i, Phone_Trigger_Update__c = false));
+        }
+        insert accounts;
+        
+        
+        Test.startTest();
+        UpdateCheckboxBatch accountBatch = new UpdateCheckboxBatch('Account', 'Phone_Trigger_Update__c');
+        Database.executeBatch(accountBatch, 200);
+        Test.stopTest();
+        
+        
+        List<Account> updatedAccounts = [SELECT Id, Phone_Trigger_Update__c FROM Account WHERE Id IN :accounts];
+        for (Account acc : updatedAccounts) {
+            System.assertEquals(true, acc.Phone_Trigger_Update__c, 'Account checkbox should be updated');
+        }
+    }
+    
+    @isTest
+    static void testContactBatchExecution() {
+        
+        List<Contact> contacts = new List<Contact>();
+        for (Integer i = 0; i < 15; i++) {
+            contacts.add(new Contact(FirstName = 'Test', LastName = 'Contact ' + i, Phone_Trigger_Update__c = false));
+        }
+        insert contacts;
+        
+        
+        Test.startTest();
+        UpdateCheckboxBatch contactBatch = new UpdateCheckboxBatch('Contact', 'Phone_Trigger_Update__c');
+        Database.executeBatch(contactBatch, 200);
+        Test.stopTest();
+        
+        
+        List<Contact> updatedContacts = [SELECT Id, Phone_Trigger_Update__c FROM Contact WHERE Id IN :contacts];
+        for (Contact con : updatedContacts) {
+            System.assertEquals(true, con.Phone_Trigger_Update__c, 'Contact checkbox should be updated');
+        }
+    }
+    
+    @isTest
+    static void testLeadBatchExecution() {
+        
+        List<Lead> leads = new List<Lead>();
+        for (Integer i = 0; i < 15; i++) {
+            leads.add(new Lead(FirstName = 'Test', LastName = 'Lead ' + i, Company='BYT', Phone_Trigger_Update__c = false));
+        }
+        insert leads;
+        
+        
+        Test.startTest();
+        UpdateCheckboxBatch leadBatch = new UpdateCheckboxBatch('Lead', 'Phone_Trigger_Update__c');
+        Database.executeBatch(leadBatch, 200);
+        Test.stopTest();
+        
+        
+        List<Lead> updatedLeads = [SELECT Id, Phone_Trigger_Update__c FROM Lead WHERE Id IN :leads];
+        for (Lead ld : updatedLeads) {
+            System.assertEquals(true, ld.Phone_Trigger_Update__c, 'Lead checkbox should be updated');
+        }
+    }
+}
+
+\
+\
+\
+\
+\
+\
+
+Anonymous Window execution
+
+
+UpdateCheckboxBatch accountBatch = new UpdateCheckboxBatch('Account', 'Phone_Trigger_Update__c');
+Database.executeBatch(accountBatch, 200);  
+
+
+UpdateCheckboxBatch contactBatch = new UpdateCheckboxBatch('Contact', 'Phone_Trigger_Update__c');
+Database.executeBatch(contactBatch, 200); 
+
+
+UpdateCheckboxBatch leadBatch = new UpdateCheckboxBatch('Lead', 'Phone_Trigger_Update__c');
+Database.executeBatch(leadBatch, 200);  
+
